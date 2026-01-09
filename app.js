@@ -256,6 +256,9 @@ analyzeBtn.addEventListener("click", async () => {
 
     const chatText = await txtFiles[0].async("string");
     const stats = analyzeChat(chatText);
+    if (stats.totalMessages === 0) {
+      throw new Error("Не удалось распознать формат чата");
+    }
     renderStats(stats);
     statusEl.textContent = "Готово! Статистика обновлена.";
   } catch (error) {
@@ -266,7 +269,7 @@ analyzeBtn.addEventListener("click", async () => {
 });
 
 function analyzeChat(text) {
-  const lines = text.split(/\r?\n/).filter(Boolean);
+  const messages = parseMessages(text);
   const messageCounts = {};
   const wordCounts = {};
   let totalMessages = 0;
@@ -274,12 +277,7 @@ function analyzeChat(text) {
   let totalMedia = 0;
   let totalVideos = 0;
 
-  for (const line of lines) {
-    const parsed = parseLine(line);
-    if (!parsed) {
-      continue;
-    }
-    const { sender, message } = parsed;
+  for (const { sender, message } of messages) {
     totalMessages += 1;
     messageCounts[sender] = (messageCounts[sender] || 0) + 1;
 
@@ -319,7 +317,25 @@ function analyzeChat(text) {
   };
 }
 
-function parseLine(line) {
+function parseMessages(text) {
+  const lines = text.split(/\r?\n/);
+  const messages = [];
+  for (const line of lines) {
+    if (!line) {
+      continue;
+    }
+    const parsed = parseLineHeader(line);
+    if (parsed) {
+      messages.push(parsed);
+    } else if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      lastMessage.message = `${lastMessage.message}\n${line}`.trim();
+    }
+  }
+  return messages;
+}
+
+function parseLineHeader(line) {
   const cleanedLine = line
     .replace(/^\uFEFF/, "")
     .replace(/^[\u200E\u200F]/, "")
@@ -327,10 +343,10 @@ function parseLine(line) {
     .trim();
   const match =
     cleanedLine.match(
-      /^(\d{1,2}[./]\d{1,2}[./]\d{2,4}),?\s(\d{1,2}:\d{2})(?:\s?[APMapm]{2})?\s[-–]\s([^:]+):\s(.+)$/
+      /^(\d{1,4}[./-]\d{1,2}[./-]\d{1,4}),?\s(\d{1,2}:\d{2}(?::\d{2})?)(?:\s?[APMapm]{2})?\s[-–]\s([^:]+):\s(.+)$/
     ) ||
     cleanedLine.match(
-      /^\[(\d{1,2}[./]\d{1,2}[./]\d{2,4}),?\s(\d{1,2}:\d{2})(?:\s?[APMapm]{2})?\]\s([^:]+):\s(.+)$/
+      /^\[(\d{1,4}[./-]\d{1,2}[./-]\d{1,4}),?\s(\d{1,2}:\d{2}(?::\d{2})?)(?:\s?[APMapm]{2})?\]\s([^:]+):\s(.+)$/
     );
 
   if (!match) {
