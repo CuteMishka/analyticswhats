@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WhatsApp Chat Analyzer</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <div>
+          <p class="badge">Аналитика WhatsApp</p>
+          <h1>Красивый анализ чата WhatsApp</h1>
+          <p class="subtitle">
+            Загрузите архив .zip с экспортом чата и получите статистику по сообщениям,
+            участникам, звонкам и словам.
+          </p>
+        </div>
+        <div class="upload-card">
+          <label class="upload" for="zipInput">
+            <input id="zipInput" type="file" accept=".zip" />
+            <span class="upload-title">Перетащите .zip или выберите файл</span>
+            <span class="upload-subtitle">Мы автоматически найдём .txt внутри архива</span>
+          </label>
+          <div class="upload-meta">
+            <span id="fileName">Файл не выбран</span>
+            <button id="analyzeBtn" class="primary" disabled>Проанализировать</button>
+          </div>
+          <p id="status" class="status"></p>
+        </div>
+      </header>
+
+      <section class="dashboard">
+        <div class="card">
+          <h3>Всего сообщений</h3>
+          <p id="totalMessages" class="metric">0</p>
+        </div>
+        <div class="card">
+          <h3>Звонки</h3>
+          <p id="totalCalls" class="metric">0</p>
+        </div>
+        <div class="card">
+          <h3>Медиа</h3>
+          <p id="totalMedia" class="metric">0</p>
+        </div>
+        <div class="card">
+          <h3>Видео</h3>
+          <p id="totalVideos" class="metric">0</p>
+        </div>
+      </section>
+
+      <section class="grid">
+        <div class="panel">
+          <h2>Сообщения по участникам</h2>
+          <div id="participants" class="list"></div>
+        </div>
+        <div class="panel">
+          <h2>Слова</h2>
+          <div class="word-grid">
+            <div>
+              <h4>Самое популярное</h4>
+              <p id="topWord" class="word">—</p>
+            </div>
+            <div>
+              <h4>Самое редкое</h4>
+              <p id="rareWord" class="word">—</p>
+            </div>
+          </div>
+          <div class="word-list">
+            <h4>Топ 10 слов</h4>
+            <ol id="topWords"></ol>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>
+        Данные обрабатываются локально в браузере. Файлы не отправляются на сервер.
+      </p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
