@@ -78,6 +78,11 @@ h1 {
   background: #eef2ff;
 }
 
+.upload.is-dragging {
+  border-color: #4f46e5;
+  background: #e0e7ff;
+}
+
 .upload input {
   display: none;
 }

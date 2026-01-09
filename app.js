@@ -2,6 +2,7 @@ const zipInput = document.getElementById("zipInput");
 const analyzeBtn = document.getElementById("analyzeBtn");
 const statusEl = document.getElementById("status");
 const fileNameEl = document.getElementById("fileName");
+const uploadLabel = document.querySelector(".upload");
 
 const totalMessagesEl = document.getElementById("totalMessages");
 const totalCallsEl = document.getElementById("totalCalls");
@@ -211,21 +212,30 @@ const MEDIA_MARKERS = [
 
 const VIDEO_MARKERS = ["video omitted", "<video omitted>", "video"];
 
-zipInput.addEventListener("change", () => {
-  const file = zipInput.files?.[0];
-  if (!file) {
-    fileNameEl.textContent = "Файл не выбран";
-    analyzeBtn.disabled = true;
-    return;
-  }
+let selectedFile = null;
 
-  fileNameEl.textContent = file.name;
-  analyzeBtn.disabled = false;
-  statusEl.textContent = "";
+zipInput.addEventListener("change", () => {
+  updateSelectedFile(zipInput.files?.[0] ?? null);
+});
+
+uploadLabel.addEventListener("dragover", (event) => {
+  event.preventDefault();
+  uploadLabel.classList.add("is-dragging");
+});
+
+uploadLabel.addEventListener("dragleave", () => {
+  uploadLabel.classList.remove("is-dragging");
+});
+
+uploadLabel.addEventListener("drop", (event) => {
+  event.preventDefault();
+  uploadLabel.classList.remove("is-dragging");
+  const droppedFile = event.dataTransfer?.files?.[0] ?? null;
+  updateSelectedFile(droppedFile);
 });
 
 analyzeBtn.addEventListener("click", async () => {
-  const file = zipInput.files?.[0];
+  const file = selectedFile;
   if (!file) {
     return;
   }
@@ -235,8 +245,9 @@ analyzeBtn.addEventListener("click", async () => {
 
   try {
     const zipData = await JSZip.loadAsync(file);
-    const txtFiles = Object.values(zipData.files).filter((entry) =>
-      entry.name.toLowerCase().endsWith(".txt")
+    const txtFiles = Object.values(zipData.files).filter(
+      (entry) =>
+        !entry.dir && entry.name.toLowerCase().endsWith(".txt")
     );
 
     if (txtFiles.length === 0) {
@@ -309,11 +320,16 @@ function analyzeChat(text) {
 }
 
 function parseLine(line) {
+  const cleanedLine = line
+    .replace(/^\uFEFF/, "")
+    .replace(/^[\u200E\u200F]/, "")
+    .replace(/\u202F/g, " ")
+    .trim();
   const match =
-    line.match(
+    cleanedLine.match(
       /^(\d{1,2}[./]\d{1,2}[./]\d{2,4}),?\s(\d{1,2}:\d{2})(?:\s?[APMapm]{2})?\s[-–]\s([^:]+):\s(.+)$/
     ) ||
-    line.match(
+    cleanedLine.match(
       /^\[(\d{1,2}[./]\d{1,2}[./]\d{2,4}),?\s(\d{1,2}:\d{2})(?:\s?[APMapm]{2})?\]\s([^:]+):\s(.+)$/
     );
 
@@ -366,4 +382,25 @@ function renderStats(stats) {
     li.textContent = `${word} — ${count}`;
     topWordsEl.appendChild(li);
   });
+}
+
+function updateSelectedFile(file) {
+  if (!file) {
+    fileNameEl.textContent = "Файл не выбран";
+    analyzeBtn.disabled = true;
+    selectedFile = null;
+    return;
+  }
+
+  if (!file.name.toLowerCase().endsWith(".zip")) {
+    statusEl.textContent = "Пожалуйста, выберите .zip архив";
+    analyzeBtn.disabled = true;
+    selectedFile = null;
+    return;
+  }
+
+  selectedFile = file;
+  fileNameEl.textContent = file.name;
+  analyzeBtn.disabled = false;
+  statusEl.textContent = "";
 }
