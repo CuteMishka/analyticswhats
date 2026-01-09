@@ -222,6 +222,49 @@ h1 {
   color: #6b7280;
 }
 
+.report {
+  display: grid;
+  gap: 20px;
+}
+
+.report-text {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #374151;
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+
+.fun-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.fun-card {
+  background: #f3f4f6;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.fun-card h4 {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.fun-value {
+  font-size: 20px;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.fun-subtitle {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 6px;
+}
+
 @media (max-width: 720px) {
   .upload-meta {
     flex-direction: column;

@@ -12,6 +12,8 @@ const participantsEl = document.getElementById("participants");
 const topWordEl = document.getElementById("topWord");
 const rareWordEl = document.getElementById("rareWord");
 const topWordsEl = document.getElementById("topWords");
+const reportEl = document.getElementById("report");
+const funStatsEl = document.getElementById("funStats");
 
 const STOP_WORDS = new Set([
   "и",
@@ -185,6 +187,12 @@ const STOP_WORDS = new Set([
   "or",
   "an",
   "from",
+  "omitted",
+  "отсутствует",
+  "media",
+  "video",
+  "image",
+  "sticker",
 ]);
 
 const CALL_MARKERS = [
@@ -208,9 +216,14 @@ const MEDIA_MARKERS = [
   "<gif omitted>",
   "document omitted",
   "<document omitted>",
+  "sticker omitted",
+  "<sticker omitted>",
+  "sticker",
 ];
 
 const VIDEO_MARKERS = ["video omitted", "<video omitted>", "video"];
+const IMAGE_MARKERS = ["image omitted", "<image omitted>", "image"];
+const STICKER_MARKERS = ["sticker omitted", "<sticker omitted>", "sticker"];
 
 let selectedFile = null;
 
@@ -276,6 +289,15 @@ function analyzeChat(text) {
   let totalCalls = 0;
   let totalMedia = 0;
   let totalVideos = 0;
+  let totalImages = 0;
+  let totalStickers = 0;
+  let totalCharacters = 0;
+  let maxMessageLength = 0;
+  let longestMessageSender = "—";
+  let emojiCount = 0;
+  let longestStreak = 0;
+  let currentStreak = 0;
+  let lastSender = null;
 
   for (const { sender, message } of messages) {
     totalMessages += 1;
@@ -291,11 +313,31 @@ function analyzeChat(text) {
     if (containsMarker(lowered, VIDEO_MARKERS)) {
       totalVideos += 1;
     }
+    if (containsMarker(lowered, IMAGE_MARKERS)) {
+      totalImages += 1;
+    }
+    if (containsMarker(lowered, STICKER_MARKERS)) {
+      totalStickers += 1;
+    }
 
     const words = tokenize(message);
     for (const word of words) {
       wordCounts[word] = (wordCounts[word] || 0) + 1;
     }
+
+    totalCharacters += message.length;
+    emojiCount += countEmojis(message);
+    if (message.length > maxMessageLength) {
+      maxMessageLength = message.length;
+      longestMessageSender = sender;
+    }
+    if (lastSender === sender) {
+      currentStreak += 1;
+    } else {
+      currentStreak = 1;
+      lastSender = sender;
+    }
+    longestStreak = Math.max(longestStreak, currentStreak);
   }
 
   const sortedWords = Object.entries(wordCounts).sort((a, b) => b[1] - a[1]);
@@ -305,15 +347,27 @@ function analyzeChat(text) {
       ? sortedWords[sortedWords.length - 1][0]
       : "—";
 
+  const avgMessageLength = totalMessages
+    ? Math.round(totalCharacters / totalMessages)
+    : 0;
+
   return {
     totalMessages,
     totalCalls,
     totalMedia,
     totalVideos,
+    totalImages,
+    totalStickers,
     messageCounts,
     topWord,
     rareWord,
     topWords: sortedWords.slice(0, 10),
+    totalCharacters,
+    avgMessageLength,
+    longestMessageSender,
+    maxMessageLength,
+    emojiCount,
+    longestStreak,
   };
 }
 
@@ -398,6 +452,9 @@ function renderStats(stats) {
     li.textContent = `${word} — ${count}`;
     topWordsEl.appendChild(li);
   });
+
+  reportEl.textContent = buildReport(stats);
+  funStatsEl.innerHTML = renderFunStats(stats);
 }
 
 function updateSelectedFile(file) {
@@ -419,4 +476,53 @@ function updateSelectedFile(file) {
   fileNameEl.textContent = file.name;
   analyzeBtn.disabled = false;
   statusEl.textContent = "";
+}
+
+function buildReport(stats) {
+  const participants = Object.keys(stats.messageCounts).length;
+  return [
+    `Участников: ${participants}.`,
+    `Сообщений: ${stats.totalMessages}.`,
+    `Медиа (без вложений): ${stats.totalMedia}, изображения: ${stats.totalImages}, видео: ${stats.totalVideos}, стикеры: ${stats.totalStickers}.`,
+    `Звонки: ${stats.totalCalls}.`,
+    `Самое частое слово: ${stats.topWord}.`,
+    `Средняя длина сообщения: ${stats.avgMessageLength} символов.`,
+  ].join(" ");
+}
+
+function renderFunStats(stats) {
+  const funItems = [
+    {
+      title: "Самое длинное сообщение",
+      value: `${stats.maxMessageLength} символов`,
+      subtitle: `Автор: ${stats.longestMessageSender}`,
+    },
+    {
+      title: "Эмодзи-шторм",
+      value: `${stats.emojiCount} эмодзи`,
+      subtitle: "Считаем все emoji в тексте",
+    },
+    {
+      title: "Серия сообщений",
+      value: `${stats.longestStreak} подряд`,
+      subtitle: "Самая длинная серия от одного автора",
+    },
+  ];
+
+  return funItems
+    .map(
+      (item) => `
+      <div class="fun-card">
+        <h4>${item.title}</h4>
+        <p class="fun-value">${item.value}</p>
+        <p class="fun-subtitle">${item.subtitle}</p>
+      </div>
+    `
+    )
+    .join("");
+}
+
+function countEmojis(text) {
+  const matches = text.match(/\p{Extended_Pictographic}/gu);
+  return matches ? matches.length : 0;
 }
